@@ -1,5 +1,4 @@
 import * as vkActions from './../actions/vk-actions';
-import * as scActions from './../actions/sc-actions';
 import Playlist from './playlist';
 import * as player from './../player/player-control';
 import loadingSpinner from '../tui/loading-spinner';
@@ -65,6 +64,10 @@ let playCurrent = () => {
   }
 };
 
+export let setPlaylist = (tracks) => {
+  playlist.setPlaylist(tracks);
+};
+
 export let stop = () => {
   screen.title = ':mu';
   playlist.stop();
@@ -92,7 +95,7 @@ let sortAndResumePlay = (sortQuery) => {
           break;
         }
       }
-      if (id !== null) player.play(cur.url, id);
+      // if (id !== null) player.play(cur.url, id);
 
       playlist.mpd.removeListener('changed', resumePlay);
     }
@@ -133,11 +136,10 @@ export let search = (payload) => {
   let tryTimeout = storage.data.search.timeout;
   let tryAttempts = storage.data.search.retries;
 
-  stop();
+  // stop();
 
   if (payload.type === 'search' || payload.type === 'tagsearch') {
     playlist.clearOnAppend = true;
-    sc = scActions.getSearch(payload.query, {tryTimeout: tryTimeout, tryAttempts: tryAttempts}).then(appendTracks);
     vk = vkActions.getSearch(payload.query, {tryTimeout: tryTimeout, tryAttempts: tryAttempts}).then((tracks) => {
       appendTracks(tracks);
       return loadBitrates(tracks, spinner);
@@ -145,7 +147,6 @@ export let search = (payload) => {
 
   } else if (payload.type === 'searchWithArtist') {
     playlist.clearOnAppend = true;
-    sc = scActions.getSearchWithArtist(payload.track, payload.artist, {tryTimeout: tryTimeout, tryAttempts: tryAttempts}).then(appendTracks);
     vk = vkActions.getSearchWithArtist(payload.track, payload.artist, {tryTimeout: tryTimeout, tryAttempts: tryAttempts}).then((tracks) => {
       appendTracks(tracks);
       return loadBitrates(tracks, spinner);
@@ -156,8 +157,6 @@ export let search = (payload) => {
   Promise.all([vk, sc]).then(() => {
     let count = 0;
 
-    if (sc && sc.isFulfilled() && Array.isArray(sc.value()))
-      count += sc.value().length;
     if (vk && vk.isFulfilled() && Array.isArray(vk.value()))
       count += vk.value().length;
 
@@ -203,9 +202,6 @@ let getBatchSearch = (tracklist, spinner) => {
     spinner.setLabel(`${index + 1} / ${tracklist.length}: ${current.track}`);
     spinner.setContent('Searching for "' + current.track + '"...');
     return delay.then(() => {
-      let sc = scActions.getSearchWithArtist(current.track, current.artist,
-        { limit: 10, tryTimeout: tryTimeout, tryAttempts: tryAttempts })
-          .catch(localError);
       let vk = vkActions.getSearchWithArtist(current.track, current.artist,
         { limit: limit, tryTimeout: tryTimeout, tryAttempts: tryAttempts })
           .catch(localError);
@@ -214,8 +210,6 @@ let getBatchSearch = (tracklist, spinner) => {
         let vkTracks = [];
         let scTracks = [];
 
-        if (sc && sc.isFulfilled() && Array.isArray(sc.value()) && sc.value().length > 0)
-          scTracks = sc.value();
         if (vk && vk.isFulfilled() && Array.isArray(vk.value()) && vk.value().length > 0)
           vkTracks = vk.value();
 
@@ -305,3 +299,7 @@ export let updatePbar = (elapsed, seek) => {
 
   trackInfo.setProgress(elapsed, seek);
 };
+
+export let addToProfile = (index, album) => {
+  return vkActions.addToProfile(playlist.get(index), album);
+}

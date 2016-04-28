@@ -1,6 +1,8 @@
-import storage, { PAUSE, SHOW_HELP } from './../storage/storage';
+import storage, { PAUSE, SHOW_HELP, ADD_TO_PROFILE, DELETE_FROM_PROFILE, PROFILE_CHANGED } from './../storage/storage';
 
 import HelpBox from './../tui/help-box';
+import SelectList from './../tui/select-list';
+import * as vkActions from './../actions/vk-actions';
 import * as leftPane from './media-browser-ctrl';
 import * as rightPane from './playlist-ctrl';
 import * as player from './../player/player-control';
@@ -27,10 +29,25 @@ export default (screen, layout) => {
 
   // logger should be first
   Logger.screen = layout.logger;
-  leftPane.init(screen, layout.mediaTree, layout.qsearch);
+  leftPane.init(screen, layout.mediaTree);
   rightPane.init(screen, layout);
   qsearch.init(screen, layout);
 
   storage.on(PAUSE, () => player.pause());
   storage.on(SHOW_HELP, () => HelpBox(screen));
+
+  storage.on(PROFILE_CHANGED, () => leftPane.search());
+  storage.on(ADD_TO_PROFILE, () => {
+    const profilePlaylists = layout.mediaTree.data.children;
+    const profilePlaylistsNames = Object.keys(profilePlaylists);
+    SelectList(screen, profilePlaylistsNames).then(option => {
+      rightPane.addToProfile(layout.playlist.selected, profilePlaylists[profilePlaylistsNames[option]].id);
+    });
+  });
+  storage.on(DELETE_FROM_PROFILE, () => {
+    const aid = layout.mediaTree.nodeLines[layout.mediaTree.rows.selected].id;
+    if (aid) {
+      vkActions.deleteFromProfile({ aid });
+    }
+  });
 };

@@ -1,7 +1,6 @@
 import blessed from 'blessed';
 import _ from 'lodash';
 import Promise from 'bluebird';
-import * as lfmActions from './../actions/lastfm-actions';
 import errorHandler from '../helpers/error-handler';
 
 export default (screen, items, displayProp, label) => {

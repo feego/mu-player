@@ -26,30 +26,6 @@ export let init = (_screen, _layout) => {
     leftPane.search({ type: type, query: query });
   });
 
-  qsearch.source = source;
-
   qsearch.setValue(storage.data.lastQuery || 'The Beatles');
   qsearch.emit('submit');
 };
-
-let source = (text, cb) => {
-  let len = storage.data.qsearch.maxitems;
-  let out = [];
-
-  lfm.getSearch(text, len).then((data) => {
-    if (data.artists) {
-      data.artists.forEach((artist) => {
-        out.push(artist.name);
-      });
-    }
-
-    if (data.tracks) {
-      data.tracks.forEach((track) => {
-        out.push(track.name);
-      });
-    }
-
-    cb(null, out.slice(0, len).reverse());
-  });
-};
-

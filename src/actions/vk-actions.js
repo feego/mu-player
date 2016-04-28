@@ -1,9 +1,9 @@
 import * as vk from 'vk-universal-api';
 import errorHandler from '../helpers/error-handler';
 import Promise from 'bluebird';
-import storage from '../storage/storage';
+import storage, { PROFILE_CHANGED } from '../storage/storage';
 
-const SEARCH_LIMIT = 1000;
+const SEARCH_LIMIT = 100;
 const NOTFOUND = 'VK:NotFound';
 
 let handleData = (result) => {
@@ -31,7 +31,8 @@ export let getSearch = (query, opts={}) => {
     count: limit,
     offset: offset * limit,
     q: query,
-    sort: 2
+    sort: 2,
+    search_own: opts.searchOwn || 0
   };
 
   return new Promise((resolve, reject) => {
@@ -109,4 +110,88 @@ export let getSearchWithArtistExact = (track, artist) => {
 
     return handleData(items);
   });
+};
+
+
+
+export let get = (opts={}) => {
+  Logger.screen.info('vk.com', `audio.get()`);
+
+  let tryTimeout = opts.tryTimeout || storage.data.search.timeout;
+  let tryAttempts = opts.tryAttempts || storage.data.search.retries;
+  let tryCounter = 0;
+
+  return new Promise((resolve, reject) => {
+    let localError = (err) => {
+      if (tryCounter++ >= tryAttempts || err.message === NOTFOUND) return reject(err);
+
+      Logger.screen.info('vk.com', `retrying audio.get() ...${tryCounter} of ${tryAttempts}`);
+      doGet();
+    };
+
+    let done = (result) => {
+      if (!result || !result.items) return localError(new Error('Unknown answer: ' + result));
+
+      resolve(Promise.resolve(result.items.concat(result.meta)));
+    };
+
+    let doGet = () => {
+      vk.method('audio.get', opts)
+        .timeout(tryTimeout)
+           .then((res) => done(res))
+              .catch((err) => localError(err));
+    };
+
+    doGet();
+  });
+};
+
+export let getAlbums = (opts = {}) => {
+  Logger.screen.info('vk.com', `audio.getAlbums()`);
+
+  let tryTimeout = opts.tryTimeout || storage.data.search.timeout;
+  let tryAttempts = opts.tryAttempts || storage.data.search.retries;
+  let tryCounter = 0;
+
+  return new Promise((resolve, reject) => {
+    let localError = (err) => {
+      if (tryCounter++ >= tryAttempts || err.message === NOTFOUND) return reject(err);
+
+      Logger.screen.info('vk.com', `retrying audio.getAlbums() ...${tryCounter} of ${tryAttempts}`);
+      getAlbums();
+    };
+
+    let done = (result) => {
+      if (!result || !result.items) return localError(new Error('Unknown answer: ' + result));
+
+      resolve(Promise.resolve(result.items));
+    };
+
+    let getAlbums = () => {
+      vk.method('audio.getAlbums', {})
+        .timeout(tryTimeout)
+        .then((res) => done(res))
+        .catch((err) => localError(err));
+    };
+
+    getAlbums();
+  });
+};
+
+export let addToProfile = (selected, album_id) => {
+  return vk.method('audio.add', { audio_id: selected.aid , owner_id: selected.owner_id, album_id }).then((track) => {
+    Logger.screen.info('Track added to profile successfully.');
+    storage.emit(PROFILE_CHANGED);
+    return selected;
+  });
+};
+
+export let deleteFromProfile = (selected) => {
+  return vk.method('users.get')
+    .then(user => vk.method('audio.delete', { owner_id: user.meta.uid, audio_id: selected.aid }))
+    .then(() => {
+      Logger.screen.info('Track deleted from profile successfully.');
+      storage.emit(PROFILE_CHANGED);
+      return selected.aid;
+    }).catch(error => console.log(error))
 };

@@ -65,18 +65,6 @@ export default (screen, artist) => {
     screen.render();
   });
 
-
-  lfmActions.getSimilar(artist).then((artists) => {
-    Logger.screen.info('Found: ', artists.length +
-      ' similar artists for ' + artist);
-    list.setItems(_.pluck(artists, 'name'));
-    layout = blessed.box(layoutOpts);
-    layout.append(list);
-    screen.saveFocus();
-    list.focus();
-    screen.render();
-  }).catch(errorHandler);
-
   return new Promise((resolve, reject) => {
     list.on('select', (selected, index) => {
       clear();

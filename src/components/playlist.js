@@ -40,7 +40,7 @@ Playlist.prototype.reset = function() {
   this.data = [];
   this.curIndex = 0;
   this.prevIndex = 0;
-  this.mpd.clear();
+  // this.mpd.clear();
   this.list.clearItems();
   this.counter.hide();
 };
@@ -83,6 +83,10 @@ Playlist.prototype.mpdAdd = function(track) {
       if (err) Logger.info(err);
     });
   });
+};
+
+Playlist.prototype.get = function(index) {
+  return this.data[index];
 };
 
 Playlist.prototype.getCurrent = function() {

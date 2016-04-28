@@ -7,7 +7,7 @@ import meow from 'meow';
 import * as player from '../src/player/player-control';
 
 import storage, { VK_SEARCH, PAUSE, ADD_TO_PROFILE, SHOW_HELP, SWITCH_PANE,
-  MOVE_TO_PLAYING, FOCUS_LEFT_PANE, FOCUS_RIGHT_PANE, LOCAL_SEARCH } from './storage/storage';
+  MOVE_TO_PLAYING, FOCUS_LEFT_PANE, FOCUS_RIGHT_PANE, LOCAL_SEARCH, DELETE_FROM_PROFILE } from './storage/storage';
 
 let cli = meow(`
   Usage
@@ -45,6 +45,9 @@ setupCredentials(cli.flags.setup).then(() => {
 
   layout.mediaTree.rows.key(['tab'], () => { layout.playlist.focus(); screen.render(); });
   layout.playlist.key(['tab'], () => { layout.qsearch.focus(); screen.render(); });
+
+  layout.playlist.key(['p'], () => { storage.emit(ADD_TO_PROFILE); });
+  layout.mediaTree.rows.key(['o'], () => { storage.emit(DELETE_FROM_PROFILE); });
 
   layout.playlist.key(['pageup'], () => {
     layout.playlist.up(layout.playlist.height - 2);
