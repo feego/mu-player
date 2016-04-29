@@ -13,6 +13,7 @@ export let init = (_screen, _layout) => {
   layout = _layout;
   qsearch = layout.qsearch;
 
+  qsearch.source = () => {};
   qsearch.on('submit', () => {
     let type = 'search';
     let query = qsearch.value.trim();
